@@ -140,8 +140,6 @@ for samp in samplelines: #map transcriptomes to index
         readtotal = 0
         filtered = 0
         with open("HCMV_{}.sam".format(samp[0]), "r") as s: #sam file
-            #readtotal = int(os.system("wc -l {}".format(s))) #count the number of lines for original read number, exclude first 3
-            #filtered = int(os.system('grep "YF:" {} | wc -l'.format(s))) #count the number of lines with the YF flag that indicates it was filtered out
             for line in s.readlines()[3:]: #count the number of lines for original read number, exclude first 3
                 readtotal += 1
                 if "YF:" in line: #count the number of lines with the YF flag that indicates it was filtered out
@@ -152,21 +150,25 @@ for samp in samplelines: #map transcriptomes to index
 with open("PipelineProject.log", "a") as f:
     f.write('\n') #separate sections in the log
 
-for patient in by_donor: #assemble in spades
+for patient in by_donor: #assemble each the output from Bowtie2 for each donor in spades with a k-mer size of 77
     com = "spades.py -k 77 --only-assembler --pe-1 1 {0}_1.fastq --pe-2 1 {0}_2.fastq --pe-1 2 {1}_1.fastq --pe-2 2 {1}_2.fastq -o donor_{2}_assembly/".format(by_donor[patient][0],by_donor[patient][1],patient)
+    #combine both conditions (2dpi and 6dpi) for each donor
     with open("PipelineProject.log", "a") as f:
         f.write(com + '\n')
     if not os.path.isdir("donor_{}_assembly".format(patient)):
         os.system(com)
 
 #obtain sequences for Betaherpesvirinae subfamily
-if not os.path.isfile("ncbi_dataset/data/genomic.fna"):
+if not os.path.isfile("sub/ncbi_dataset/data/genomic.fna"):
+    os.system("mkdir sub") #otherwise you have 2 ncbi_download folders
+    os.chdir("sub") #enter new subdirectory
     os.system("datasets download virus genome taxon betaherpesvirinae --refseq --include genome")
-    os.system("unzip ncbi_dataset.zip")
+    os.system("unzip ncbi_dataset.zip") #unzip
+    os.chdir("..") #return to PipelineProject_Joshua_Melnick
 
 #build Betaherpesvirinae database
 if not os.path.isfile("betaherpesvirinae.nhr"):
-    os.system("makeblastdb -in ncbi_dataset/data/genomic.fna -out betaherpesvirinae -dbtype nucl")
+    os.system("makeblastdb -in sub/ncbi_dataset/data/genomic.fna -out betaherpesvirinae -dbtype nucl")
 
 for don in by_donor: #loop through our donors
     contigs = list(SeqIO.parse("donor_{}_assembly/contigs.fasta".format(don), "fasta")) #list of contigs
@@ -178,15 +180,16 @@ for don in by_donor: #loop through our donors
         if len(c.seq) > len(longseq): #if this is the longest contig so far, update our variables
             longid = c.id
             longseq = c.seq
-            longin = i
+            longin = i #index of longest contig
         i += 1
     SeqIO.write(contigs[longin], "d{}_contig.fasta".format(don), "fasta") #write longest contig to a file
-    #run blast+
-    blastcommand = 'blastn -query d{0}_contig.fasta -db betaherpesvirinae -out blast{0}.txt -outfmt "6 sacc pident length qstart qend sstart send bitscore evalue stitle"'.format(don)
+    #run blast+ on the longest contig of each donor and only keep the best alignment
+    blastcommand = 'blastn -query d{0}_contig.fasta -db betaherpesvirinae -out blast{0}.txt -max_hsps 1 -outfmt "6 sacc pident length qstart qend sstart send bitscore evalue stitle"'.format(don)
     os.system(blastcommand)
     with open("PipelineProject.log", "a") as f: #add the output to the log
         f.write("\nDonor{}:\n".format(don))
         f.write("sacc\tpident\tlength\tqstart\tqend\tsstart\tsend\tbitscore\tevalue\tstitle\n") #header
+        #subject accession, percent identity, alignment length, start/end of alignment in query, start/end of alignment in subject, bit score, E-value, subject title
         with open("blast{}.txt".format(don), "r") as j:
             for line in j.readlines()[0:10]: #top 10 results
                 f.write(line)
