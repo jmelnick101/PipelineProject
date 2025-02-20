@@ -35,4 +35,4 @@ fasterq-dump SRR5660044
 fasterq-dump SRR5660045
 
 
-After this step, you can implement the pipeline in Python. You will need Biopython for it to run properly, as well as the R programming language with the sleuth and dplyr packages. You will also need Kallisto, SPAdes, and Bowtie2. 
+After this step, you can implement the pipeline in Python. You will need Biopython for it to run properly, as well as the R programming language with the sleuth and dplyr packages. You will also need Kallisto, SPAdes, Bowtie2, and BLAST+. 
