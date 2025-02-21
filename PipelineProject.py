@@ -1,15 +1,18 @@
 import os
 from Bio import SeqIO
 from Bio import Entrez
-from Bio.Seq import Seq
-from Bio.SeqRecord import SeqRecord
 import statistics
 Entrez.email = "jmelnick@luc.edu"
 
-if not os.path.isdir("PipelineProject_Joshua_Melnick"): #make directory if it doesn't exist
-    os.system("mkdir PipelineProject_Joshua_Melnick")
-
-os.chdir("PipelineProject_Joshua_Melnick") #this is the working directory
+if "PipelineProject_Joshua_Melnick" not in os.getcwd(): #if you aren't already in the right directory
+    if not os.path.isdir("PipelineProject_Joshua_Melnick"): #make directory if it doesn't exist
+        os.system("mkdir PipelineProject_Joshua_Melnick")
+    testfiles = ['SRR5660030','SRR5660033','SRR5660044','SRR5660045'] #sample file base names
+    for test in testfiles: #iterate through base names
+        for x in range(1,3): #1 and 2 for paired ends
+            if os.path.isfile("{0}_{1}.fastq".format(test,x)): #if you downloaded the files and have never run this script, they are probably in your current directory
+                os.system("mv {0}_{1}.fastq PipelineProject_Joshua_Melnick".format(test,x)) #move them to the newly created directory
+    os.chdir("PipelineProject_Joshua_Melnick") #change to this the working directory
 
 with open("PipelineProject.log", "w") as f: #create empty log file
     pass
@@ -42,9 +45,11 @@ if not os.path.isfile("kalindex.idx"): #index the transcriptome with kallisto an
     os.system("kallisto index -i kalindex.idx pipeproteins.fasta")
 
 trans = [] #list of transcriptomes
-for file in os.listdir():
-    if file[0:3] == "SRR" and "_" not in file:
-        trans.append(str(file)) #list of transcriptome base names
+for file in os.listdir(): #iterate through files in current directory
+    if file[0:3] == "SRR" and "_" in file: #these should be your read pairs
+        t = file.split("_")[0] #get the base name by trimming everything after the first underscore
+        if t not in trans:
+            trans.append(str(t)) #list of transcriptome base names
 
 if not os.path.isdir("results"): #make a results folder
     os.system("mkdir results")
