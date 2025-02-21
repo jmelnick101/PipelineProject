@@ -11,7 +11,9 @@ Donor 3 (2dpi): https://www.ncbi.nlm.nih.gov/sra/SRX2896374
 
 Donor 3 (6dpi): https://www.ncbi.nlm.nih.gov/sra/SRX2896375
 
+## Obtaining the sample datasets
 
+### Method 1: Full data
 
 For simplicity, just enter this code to download the following transcriptomes for testing: 
 
@@ -38,4 +40,16 @@ fasterq-dump SRR5660044
 fasterq-dump SRR5660045
 ```
 
-After this step, you can implement the pipeline in Python. You will need Biopython for it to run properly, as well as the R programming language with the sleuth and dplyr packages. You will also need Kallisto, SPAdes, Bowtie2, and BLAST+. 
+### Method 2: Partial data
+
+Alternatively, instead of using wget and fasterq-dump for the full datasets, you can use the files provided in this repository, which contain only the first 10000 reads. 
+
+## Running the script
+
+Implement the Python script in the command line by calling `python PipelineProject.py`. It will generate a folder called `PipelineProject_Joshua_Melnick` if the folder doesn't already exist. It should try to move your data into that folder. The program has several checkpoints to avoid redoing the more complex commands by checking if the file it would have generated already exists. However, that means that if you want to run it with modified data, you should do it in a fresh folder. 
+
+The output of this pipeline will be found in `PipelineProject.log`. I have provided the log produced by running this script with the full dataset. 
+
+## Dependencies
+
+You will need Biopython for it to run properly, as well as the R programming language with the sleuth and dplyr packages. You will also need Kallisto, SPAdes, Bowtie2, and BLAST+. 
