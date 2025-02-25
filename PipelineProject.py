@@ -139,24 +139,20 @@ if not os.path.isfile("HCMV.1.bt2"):
     os.system("bowtie2-build ncbi_dataset/data/GCF_000845245.1/GCF_000845245.1_ViralProj14559_genomic.fna HCMV")
 
 for samp in samplelines: #map transcriptomes to index
-    if not os.path.isfile("{}_mapped_1.fq.gz".format(samp[0])):
-        os.system("bowtie2 --quiet -x HCMV -1 {0}_1.fastq -2 {0}_2.fastq -S HCMV_{0}.sam --al-conc-gz {0}_mapped_%.fq.gz".format(samp[0]))
+    if not os.path.isfile("{}_mapped_1.fq".format(samp[0])):
+        os.system("bowtie2 --quiet -x HCMV -1 {0}_1.fastq -2 {0}_2.fastq -S HCMV_{0}.sam --al-conc {0}_mapped_%.fq".format(samp[0]))
     with open("PipelineProject.log", "a") as f: #output number of reads mapped and unmapped to log
-        readtotal = 0
-        filtered = 0
-        with open("HCMV_{}.sam".format(samp[0]), "r") as s: #sam file
-            for line in s.readlines()[3:]: #count the number of lines for original read number, exclude first 3
-                readtotal += 1
-                if "YF:" in line: #count the number of lines with the YF flag that indicates it was filtered out
-                    filtered += 1
-        remaining = readtotal - filtered #the number of reads after filtration by Bowtie2
-        f.write("Donor {0} ({1}) had {2} read pairs before Bowtie2 filtering and {3} read pairs after.\n".format(donors[samp[0]],samp[1],readtotal,remaining))
+        with open("{}_1.fastq".format(samp[0]), "r") as m: #get length of original file
+            readstotal = int(len(m.readlines())/4) #divide by 4 to get total number of reads
+        with open("{}_mapped_1.fq".format(samp[0]), "r") as s: #get length of mapped file
+            readsmapped = int(len(s.readlines())/4) #divide by 4 to get number of filtered reads
+        f.write("Donor {0} ({1}) had {2} read pairs before Bowtie2 filtering and {3} read pairs after.\n".format(donors[samp[0]],samp[1],readstotal,readsmapped))
 
 with open("PipelineProject.log", "a") as f:
     f.write('\n') #separate sections in the log
 
 for patient in by_donor: #assemble each the output from Bowtie2 for each donor in spades with a k-mer size of 77
-    com = "spades.py -k 77 --only-assembler --pe-1 1 {0}_1.fastq --pe-2 1 {0}_2.fastq --pe-1 2 {1}_1.fastq --pe-2 2 {1}_2.fastq -o donor_{2}_assembly/".format(by_donor[patient][0],by_donor[patient][1],patient)
+    com = "spades.py -k 77 --only-assembler --pe-1 1 {0}_mapped_1.fq --pe-2 1 {0}_mapped_2.fq --pe-1 2 {1}_mapped_1.fq --pe-2 2 {1}_mapped_2.fq -o donor_{2}_assembly/".format(by_donor[patient][0],by_donor[patient][1],patient)
     #combine both conditions (2dpi and 6dpi) for each donor
     with open("PipelineProject.log", "a") as f:
         f.write(com + '\n')
